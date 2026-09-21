@@ -9,13 +9,22 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
 -- // ============================================
--- // KEY SYSTEM
+-- // KEY SYSTEM (Remote - GitHub hosted)
 -- // ============================================
-local VALID_KEYS = {
-    ["LOCKHUB-ALPHA-2024"] = true,
-    ["SOSA-VIP-KEY"]       = true,
-    ["TESTER-KEY-001"]     = true,
-}
+local KEY_URL = "https://raw.githubusercontent.com/chickafied/LockHub/main/keys.json"
+
+local VALID_KEYS = {}
+
+local function refreshKeys()
+    local ok, data = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(KEY_URL .. "?t=" .. tick()))
+    end)
+    if ok and type(data) == "table" then
+        VALID_KEYS = data
+        return true
+    end
+    return false
+end
 
 local SAVE_FILE = "LockHub_Key.txt"
 local function saveKey(k)
@@ -148,6 +157,11 @@ local function keyAlreadyValid()
     return false
 end
 
+-- Fetch keys from GitHub before showing UI
+if not refreshKeys() then
+    warn("[LockHub] Could not fetch keys. Check internet / URL.")
+end
+
 if not keyAlreadyValid() then
     local KeyGui, KeyInput, Status, Submit = showKeyUI()
     local verified = false
@@ -159,6 +173,9 @@ if not keyAlreadyValid() then
             Status.Text = "Please enter a key."
             return
         end
+
+        -- Refresh from server in case keys changed since launch
+        refreshKeys()
 
         if VALID_KEYS[entered] then
             Status.TextColor3 = Color3.fromRGB(80, 255, 120)
